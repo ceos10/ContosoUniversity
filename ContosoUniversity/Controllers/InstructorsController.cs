@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using ContosoUniversity.Data;
 using ContosoUniversity.Models;
@@ -40,16 +39,14 @@ namespace ContosoUniversity.Controllers
             if (id != null)
             {
                 ViewData["InstructorID"] = id.Value;
-                Instructor instructor = viewModel.Instructors.Where(
-                    i => i.ID == id.Value).Single();
+                Instructor instructor = viewModel.Instructors.Single(i => i.ID == id.Value);
                 viewModel.Courses = instructor.CourseAssignments.Select(s => s.Course);
             }
 
             if (courseID != null)
             {
                 ViewData["CourseID"] = courseID.Value;
-                viewModel.Enrollments = viewModel.Courses.Where(
-                    x => x.CourseID == courseID).Single().Enrollments;
+                viewModel.Enrollments = viewModel.Courses.Single(x => x.CourseID == courseID).Enrollments;
             }
 
             return View(viewModel);

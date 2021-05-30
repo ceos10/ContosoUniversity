@@ -6,7 +6,10 @@ using Microsoft.EntityFrameworkCore;
 using ContosoUniversity.Data;
 using ContosoUniversity.Models.SchoolViewModels;
 using System.Threading.Tasks;
+using System.Data;
+using Dapper;
 using System.Linq;
+using System;
 
 namespace ContosoUniversity.Controllers
 {
@@ -36,17 +39,67 @@ namespace ContosoUniversity.Controllers
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
 
+        //Using Dapper
         public async Task<ActionResult> About()
         {
-            IQueryable<EnrollmentDateGroup> data =
-                from student in _context.Students
-                group student by student.EnrollmentDate into dateGroup
-                select new EnrollmentDateGroup()
+            var groups = Enumerable.Empty<EnrollmentDateGroup>();
+
+            try
+            {
+                using (var connection = _context.Database.GetDbConnection())
                 {
-                    EnrollmentDate = dateGroup.Key,
-                    StudentCount = dateGroup.Count()
-                };
-            return View(await data.AsNoTracking().ToListAsync());
+                    string sqlQuery = "SELECT EnrollmentDate, COUNT(*) AS StudentCount "
+                        + "FROM Student "
+                        + "GROUP BY EnrollmentDate";
+
+                    groups = await connection.QueryAsync<EnrollmentDateGroup>(
+                      sqlQuery,
+                      commandTimeout: 480,
+                      commandType: CommandType.Text
+                    );
+                }
+            }
+            catch (Exception ex) 
+            {
+                Console.WriteLine(ex.Message);
+            }
+
+            return View(groups);
         }
+
+        //Without Dapper
+
+        //public async Task<ActionResult> About()
+        //{
+        //    List<EnrollmentDateGroup> groups = new List<EnrollmentDateGroup>();
+        //    var conn = _context.Database.GetDbConnection();
+        //    try
+        //    {
+        //        await conn.OpenAsync();
+        //        using (var command = conn.CreateCommand())
+        //        {
+        //            string query = "SELECT EnrollmentDate, COUNT(*) AS StudentCount "
+        //                + "FROM Student "
+        //                + "GROUP BY EnrollmentDate";
+        //            command.CommandText = query;
+        //            DbDataReader reader = await command.ExecuteReaderAsync();
+
+        //            if (reader.HasRows)
+        //            {
+        //                while (await reader.ReadAsync())
+        //                {
+        //                    var row = new EnrollmentDateGroup { EnrollmentDate = reader.GetDateTime(0), StudentCount = reader.GetInt32(1) };
+        //                    groups.Add(row);
+        //                }
+        //            }
+        //            reader.Dispose();
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        conn.Close();
+        //    }
+        //    return View(groups);
+        //}
     }
 }

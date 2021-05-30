@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -34,10 +32,12 @@ namespace ContosoUniversity.Controllers
                 return NotFound();
             }
 
+            string query = "SELECT * FROM Department WHERE DepartmentID = {0}";
             var department = await _context.Departments
+                .FromSqlRaw(query, id)
                 .Include(d => d.Administrator)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(m => m.DepartmentID == id);
+                .FirstOrDefaultAsync();
 
             if (department == null)
             {
